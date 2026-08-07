@@ -78,7 +78,7 @@ make -j"$(sysctl -n hw.ncpu)"          # hasil: ./bin/gs (self-contained via COM
 ## 5. Struktur repo
 
 ```
-mi-farm-gs-distro/
+ghostscript-macos-builds/
 ├── README.md            # notice AGPL + versi + cara rebuild
 ├── LICENSE              # AGPL-3.0
 ├── build/
@@ -118,7 +118,7 @@ Tiap GitHub Release memuat: `gs-darwin-universal` (atau per-arch), `SHA256SUMS`,
   "ghostscriptVersion": "10.04.0",
   "platforms": {
     "darwin-universal": {
-      "url": "https://github.com/<org>/mi-farm-gs-distro/releases/download/gs-10.04.0/gs-darwin-universal",
+      "url": "https://github.com/<org>/ghostscript-macos-builds/releases/download/gs-10.04.0/gs-darwin-universal",
       "sha256": "<hex>",
       "size": 20871234
     }
@@ -175,7 +175,7 @@ Aturan integrasi:
 ## 11. Checklist eksekusi (untuk sesi berikutnya)
 
 **Repo distro:**
-1. [ ] Buat repo publik `mi-farm-gs-distro` + LICENSE (AGPL-3.0) + README notice.
+1. [x] Buat repo publik `ghostscript-macos-builds` + LICENSE (AGPL-3.0) + README notice.
 2. [ ] `build/build-macos.sh` (parametrik `GS_VERSION`, arch) + `build/verify.sh`.
 3. [ ] Build lokal arm64 & x64, `lipo`, uji render EPS contoh.
 4. [ ] `.github/workflows/release.yml`: matrix macos-14/macos-13 → lipo → (sign/notarize) → Release + SHA256SUMS + LICENSE.

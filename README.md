@@ -1,16 +1,21 @@
-# mi-farm-gs-distro
+# ghostscript-macos-builds
 
-Public, AGPL-compliant redistributor of a minimal, self-contained
-**Ghostscript** (`gs`) build for **macOS (arm64 + x64, universal)**.
+Public, AGPL-3.0-compliant redistributor of a minimal, self-contained
+**Ghostscript** (`gs`) build for **macOS (arm64 + x64, universal)** —
+useful to any app or script that needs a local `gs` binary on macOS
+without going through Homebrew. Free to use by anyone, subject to the
+AGPL-3.0 terms in [`LICENSE`](LICENSE).
 
-This repo exists solely to let Mi-Farm render
+This repo was originally created so that Mi-Farm could render
 EPS → raster (JPEG/PNG) locally without bundling `gs` (AGPL-3.0) inside
-the Mi-Farm app itself. Mi-Farm calls the binary released here as an
+the Mi-Farm app itself — Mi-Farm calls the binary released here as an
 **arm's-length subprocess** at runtime; it does not link against or ship
-Ghostscript. See [`docs/PLAN-ghostscript-distro-repo.md`](docs/PLAN-ghostscript-distro-repo.md)
-for the full design rationale (in Indonesian).
+Ghostscript. That original design rationale is kept as background in
+[`docs/PLAN-ghostscript-distro-repo.md`](docs/PLAN-ghostscript-distro-repo.md)
+(in Indonesian), but the repo and its releases are general-purpose and
+not Mi-Farm-specific.
 
-## Why this repo is separate from Mi-Farm
+## Why keep this separate from the app that consumes it
 
 Ghostscript is licensed under **AGPL-3.0**. Bundling it inside a
 proprietary app would trigger AGPL obligations for that app. Instead:
@@ -18,9 +23,10 @@ proprietary app would trigger AGPL obligations for that app. Instead:
 - **This repo** builds and redistributes `gs` binaries and carries the
   AGPL §6 obligations (license text, corresponding source, build
   scripts, notices).
-- **Mi-Farm** downloads a pinned, SHA256-verified binary from this
-  repo's GitHub Releases at runtime and spawns it as a subprocess
-  (*mere aggregation*) — it stays proprietary.
+- **Consuming apps** (e.g. Mi-Farm, the original motivating use case)
+  download a pinned, SHA256-verified binary from this repo's GitHub
+  Releases at runtime and spawn it as a subprocess (*mere
+  aggregation*) — they can stay proprietary.
 
 ## AGPL-3.0 compliance notice
 
@@ -58,14 +64,14 @@ external `Resource/` directory required at runtime:
 ## Repo layout
 
 ```
-mi-farm-gs-distro/
+ghostscript-macos-builds/
 ├── README.md              # this file
 ├── LICENSE                # AGPL-3.0
 ├── build/
 │   ├── build-macos.sh     # parametric build recipe (version + arch)
 │   └── verify.sh          # renders a test EPS, checks exit 0 + non-empty output
 ├── source/                 # optional mirror of upstream source tarballs (corresponding source)
-├── manifest.json           # machine-readable pointer to the latest release (consumed by Mi-Farm)
+├── manifest.json           # machine-readable pointer to the latest release (consumed by downstream apps)
 ├── docs/
 │   └── PLAN-ghostscript-distro-repo.md   # original design doc (Indonesian)
 └── .github/workflows/
@@ -99,11 +105,11 @@ Each GitHub Release contains:
 
 `manifest.json` at the repo root always points at the latest release
 for programmatic discovery (see file for schema). Consumers that need
-strong integrity guarantees (like Mi-Farm) should still pin an
-explicit version + SHA256 in their own codebase rather than trusting
-the mutable manifest alone.
+strong integrity guarantees should still pin an explicit version +
+SHA256 in their own codebase rather than trusting the mutable manifest
+alone.
 
-## Consuming this repo (Mi-Farm integration contract)
+## Consuming this repo (integration contract)
 
 1. Prefer a `gs` already installed on the user's system, if present.
 2. Otherwise, download the pinned-version binary from this repo's
