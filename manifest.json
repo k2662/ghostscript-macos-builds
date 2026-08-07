@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "ghostscriptVersion": null,
-  "releaseTag": null,
-  "publishedAt": null,
+  "ghostscriptVersion": "10.07.1",
+  "releaseTag": "gs-10.07.1",
+  "publishedAt": "2026-08-07T16:07:57Z",
   "platforms": {
     "darwin-arm64": {
-      "url": null,
-      "sha256": null,
-      "size": null
+      "url": "https://github.com/microstockfarm-code/ghostscript-macos-builds/releases/download/gs-10.07.1/gs-arm64",
+      "sha256": "6cb5ba93e2739fd7c91b7243792ddbd0827e854c75da9b4edfb0e5e3607c2118",
+      "size": 27464480
     }
   }
 }
