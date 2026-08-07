@@ -4,7 +4,7 @@
   "releaseTag": null,
   "publishedAt": null,
   "platforms": {
-    "darwin-universal": {
+    "darwin-arm64": {
       "url": null,
       "sha256": null,
       "size": null

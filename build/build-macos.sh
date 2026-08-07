@@ -1,33 +1,27 @@
 #!/usr/bin/env bash
-# Build a minimal, self-contained Ghostscript binary for macOS.
+# Build a minimal, self-contained Ghostscript binary for macOS arm64
+# (Apple Silicon only — see README for why x64 isn't built here).
 #
 # Usage:
-#   GS_VERSION=10.04.0 ARCH=arm64 ./build/build-macos.sh
+#   GS_VERSION=10.07.1 ./build/build-macos.sh
 #
-# Produces: dist/gs-<ARCH>
+# Produces: dist/gs-arm64
 #
-# Must run on a native runner for the target arch (see
-# .github/workflows/release.yml for the current GA runner labels —
-# GitHub periodically deprecates old macos-NN images, so check
-# https://github.com/actions/runner-images if this drifts) —
-# cross-compiling Ghostscript is not supported.
+# Must run on an arm64 runner (see .github/workflows/release.yml for
+# the current GA runner label — GitHub periodically deprecates old
+# macos-NN images, so check https://github.com/actions/runner-images
+# if this drifts).
 
 set -euo pipefail
 
-GS_VERSION="${GS_VERSION:?Set GS_VERSION, e.g. GS_VERSION=10.04.0}"
-ARCH="${ARCH:?Set ARCH to arm64 or x64}"
+GS_VERSION="${GS_VERSION:?Set GS_VERSION, e.g. GS_VERSION=10.07.1}"
 GS_TAG="gs$(echo "${GS_VERSION}" | tr -d '.')"
-
-case "${ARCH}" in
-  arm64) DEFAULT_DEPLOYMENT_TARGET=11.0 ;;   # first macOS with Apple Silicon support
-  x64)   DEFAULT_DEPLOYMENT_TARGET=10.15 ;;
-  *) echo "ARCH must be arm64 or x64, got: ${ARCH}" >&2; exit 1 ;;
-esac
 
 # Without this, clang bakes in whatever SDK version the build machine
 # happens to have (LC_BUILD_VERSION minos) — e.g. a binary built on a
 # macOS 26 runner would refuse to run on anything older than macOS 26.
-export MACOSX_DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET:-${DEFAULT_DEPLOYMENT_TARGET}}"
+# 11.0 = Big Sur, the first macOS release with Apple Silicon support.
+export MACOSX_DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET:-11.0}"
 echo "MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET}"
 
 WORKDIR="$(mktemp -d)"
@@ -63,12 +57,12 @@ echo "Configuring (minimal, self-contained via COMPILE_INITS)..."
   --disable-dbus \
   --without-tesseract
 
-echo "Building for ${ARCH}..."
+echo "Building..."
 make -j"$(sysctl -n hw.ncpu)"
 
 popd >/dev/null
 
-OUT_PATH="${DIST_DIR}/gs-${ARCH}"
+OUT_PATH="${DIST_DIR}/gs-arm64"
 cp "${SRC_DIR}/bin/gs" "${OUT_PATH}"
 chmod +x "${OUT_PATH}"
 

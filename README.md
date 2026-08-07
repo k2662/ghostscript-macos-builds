@@ -1,7 +1,7 @@
 # ghostscript-macos-builds
 
 Public, AGPL-3.0-compliant redistributor of a minimal, self-contained
-**Ghostscript** (`gs`) build for **macOS (arm64 + x64, universal)** —
+**Ghostscript** (`gs`) build for **macOS arm64 (Apple Silicon)** —
 useful to any app or script that needs a local `gs` binary on macOS
 without going through Homebrew. Free to use by anyone, subject to the
 AGPL-3.0 terms in [`LICENSE`](LICENSE).
@@ -14,6 +14,11 @@ Ghostscript. That original design rationale is kept as background in
 [`docs/PLAN-ghostscript-distro-repo.md`](docs/PLAN-ghostscript-distro-repo.md)
 (in Indonesian), but the repo and its releases are general-purpose and
 not Mi-Farm-specific.
+
+**No x64 (Intel) build**: GitHub Actions retired free-tier Intel macOS
+runners — x64 builds now require a paid "large" runner. This repo
+ships arm64-only for that reason. Intel Mac users need a `gs` from
+elsewhere (e.g. Homebrew, or Artifex's official installers).
 
 ## Why keep this separate from the app that consumes it
 
@@ -35,8 +40,8 @@ proprietary app would trigger AGPL obligations for that app. Instead:
   contributors.
 - **Corresponding source**: each release pins an exact upstream
   Ghostscript/GhostPDL version. The upstream source tarball for that
-  version is mirrored under [`source/`](source/) (or linked + archived)
-  and referenced in the release notes.
+  version is attached to the release (and cached locally under
+  [`source/`](source/) during builds) — see §6.
 - **Build scripts**: [`build/build-macos.sh`](build/build-macos.sh) and
   the CI workflow in [`.github/workflows/release.yml`](.github/workflows/release.yml)
   are themselves part of the corresponding source — they make every
@@ -49,7 +54,7 @@ proprietary app would trigger AGPL obligations for that app. Instead:
 
 ## What gets built
 
-A single, self-contained `gs` executable per architecture, with no
+A single, self-contained `gs` executable for macOS arm64, with no
 external `Resource/` directory required at runtime:
 
 - Built with `COMPILE_INITS=1` (default) — PostScript init files and
@@ -61,13 +66,13 @@ external `Resource/` directory required at runtime:
 - Statically uses the bundled libjpeg/libpng/zlib/freetype from the gs
   source tree — minimal external dependencies (the only linked
   libraries are macOS system ones: `libSystem` + `libiconv`).
-- **Minimum macOS version**: `arm64` slice targets **macOS 11.0**
-  (Big Sur — the first release with Apple Silicon support); `x64`
-  slice targets **macOS 10.15** (Catalina). Set explicitly via
-  `MACOSX_DEPLOYMENT_TARGET` in `build/build-macos.sh` — without it,
-  clang bakes in whatever SDK version happens to be on the build
-  machine, which silently makes the binary unusable on older macOS.
-- Expected size: roughly 15–30 MB per architecture.
+- **Minimum macOS version: 11.0** (Big Sur — the first release with
+  Apple Silicon support), set explicitly via `MACOSX_DEPLOYMENT_TARGET`
+  in `build/build-macos.sh`. Without it, clang bakes in whatever SDK
+  version happens to be on the build machine (e.g. a binary built on a
+  macOS 26 runner would refuse to run on anything older than macOS 26)
+  — confirmed by testing an unpinned build before this was added.
+- Expected size: roughly 15–30 MB.
 
 ## Repo layout
 
@@ -76,42 +81,40 @@ ghostscript-macos-builds/
 ├── README.md              # this file
 ├── LICENSE                # AGPL-3.0
 ├── build/
-│   ├── build-macos.sh     # parametric build recipe (version + arch)
+│   ├── build-macos.sh     # arm64 build recipe (parametric by GS_VERSION)
 │   └── verify.sh          # renders a test EPS, checks exit 0 + non-empty output
-├── source/                 # optional mirror of upstream source tarballs (corresponding source)
+├── source/                 # local cache of the upstream source tarball during builds
 ├── manifest.json           # machine-readable pointer to the latest release (consumed by downstream apps)
 ├── docs/
 │   └── PLAN-ghostscript-distro-repo.md   # original design doc (Indonesian)
 └── .github/workflows/
-    └── release.yml         # build arm64+x64 → lipo → checksum → GitHub Release
+    └── release.yml         # build arm64 → checksum → GitHub Release
 ```
 
 ## Building locally
 
 ```bash
-GS_VERSION=10.04.0 ARCH=arm64 ./build/build-macos.sh
+GS_VERSION=10.07.1 ./build/build-macos.sh
 ./build/verify.sh ./dist/gs-arm64
 ```
 
-Build each architecture on a native runner (arm64 on `macos-15`, x64 on
-`macos-15-large` — cross-compiling `gs` is not supported; check
+Must run on an arm64 Mac (cross-compiling `gs` is not supported). CI
+builds on `macos-15` — check
 [actions/runner-images](https://github.com/actions/runner-images#available-images)
-for current GA labels, since GitHub deprecates old ones), then combine into
-a universal binary:
-
-```bash
-lipo -create dist/gs-arm64 dist/gs-x64 -output dist/gs-darwin-universal
-```
+for the current GA label if that ever needs to change, since GitHub
+periodically deprecates old `macos-NN` images (that's what broke the
+first release attempt here).
 
 ## Releases
 
 Each GitHub Release contains:
 
-- `gs-darwin-universal` (arm64 + x64 combined via `lipo`)
+- `gs-arm64`
 - `SHA256SUMS`
 - `LICENSE`
-- Release notes with the exact upstream `gs` version and source
-  reference
+- The upstream source tarball (`ghostpdl-<version>.tar.gz`) — AGPL-3.0
+  §6 corresponding source
+- Release notes with the exact upstream `gs` version
 
 `manifest.json` at the repo root always points at the latest release
 for programmatic discovery (see file for schema). Consumers that need
@@ -131,7 +134,7 @@ alone.
 4. If download/verification fails or the machine is offline, fail
    gracefully — do not silently skip verification.
 
-Full sequence diagram and rationale: [`docs/PLAN-ghostscript-distro-repo.md`](docs/PLAN-ghostscript-distro-repo.md), §8–9.
+Full sequence diagram and rationale: [`docs/PLAN-ghostscript-distro-repo.md`](docs/PLAN-ghostscript-distro-repo.md), §8–9 (note: that doc's original plan assumed a universal arm64+x64 binary; the actual release is arm64-only, see above).
 
 ## Versioning & maintenance
 

@@ -3,6 +3,12 @@
 > Dikerjakan di **sesi/repo terpisah**. Dokumen ini = spesifikasi lengkap: kenapa,
 > apa yang di-build, kepatuhan lisensi, pipeline rilis, dan **kontrak integrasi**
 > ke Mi-Farm. Boleh langsung dijadikan README repo baru.
+>
+> **Update setelah eksekusi**: rencana di bawah mengasumsikan universal binary
+> arm64+x64 (lipo). Realisasinya jadi **arm64-only** — GitHub Actions sudah
+> pensiunkan runner Intel macOS gratis (kini cuma tersedia sebagai runner
+> berbayar "large"), dan akun repo ini belum punya billing Actions aktif.
+> Lihat README repo untuk kontrak/skema rilis yang benar-benar dipakai.
 
 ## 1. Konteks & tujuan
 

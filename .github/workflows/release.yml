@@ -4,71 +4,26 @@ on:
   workflow_dispatch:
     inputs:
       gs_version:
-        description: "Ghostscript version to build, e.g. 10.04.0"
+        description: "Ghostscript version to build, e.g. 10.07.1"
         required: true
 
 permissions:
   contents: write
 
 jobs:
-  build-arm64:
+  build-and-release:
     runs-on: macos-15
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+
       - name: Build gs (arm64)
         env:
           GS_VERSION: ${{ inputs.gs_version }}
-          ARCH: arm64
         run: ./build/build-macos.sh
+
       - name: Verify
         run: ./build/verify.sh dist/gs-arm64
-      - uses: actions/upload-artifact@v4
-        with:
-          name: gs-arm64
-          path: dist/gs-arm64
-
-  build-x64:
-    runs-on: macos-15-large
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build gs (x64)
-        env:
-          GS_VERSION: ${{ inputs.gs_version }}
-          ARCH: x64
-        run: ./build/build-macos.sh
-      - name: Verify
-        run: ./build/verify.sh dist/gs-x64
-      - uses: actions/upload-artifact@v4
-        with:
-          name: gs-x64
-          path: dist/gs-x64
-
-  release:
-    needs: [build-arm64, build-x64]
-    runs-on: macos-15
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: gs-arm64
-          path: dist
-      - uses: actions/download-artifact@v4
-        with:
-          name: gs-x64
-          path: dist
-
-      - name: Combine into universal binary
-        run: |
-          chmod +x dist/gs-arm64 dist/gs-x64
-          lipo -create dist/gs-arm64 dist/gs-x64 -output dist/gs-darwin-universal
-          chmod +x dist/gs-darwin-universal
-          file dist/gs-darwin-universal
-
-      - name: Verify universal binary
-        run: ./build/verify.sh dist/gs-darwin-universal
 
       # No Apple Developer ID certificate is available, so binaries are
       # released unsigned/un-notarized on purpose. Consumers must strip
@@ -86,23 +41,23 @@ jobs:
 
       - name: Checksums
         working-directory: dist
-        run: shasum -a 256 gs-darwin-universal gs-arm64 gs-x64 ghostpdl-*.tar.gz > SHA256SUMS
+        run: shasum -a 256 gs-arm64 ghostpdl-*.tar.gz > SHA256SUMS
 
       - name: Compute release metadata
         id: meta
         run: |
           echo "tag=gs-${{ inputs.gs_version }}" >> "$GITHUB_OUTPUT"
-          echo "sha256=$(shasum -a 256 dist/gs-darwin-universal | awk '{print $1}')" >> "$GITHUB_OUTPUT"
-          echo "size=$(wc -c < dist/gs-darwin-universal | tr -d ' ')" >> "$GITHUB_OUTPUT"
+          echo "sha256=$(shasum -a 256 dist/gs-arm64 | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          echo "size=$(wc -c < dist/gs-arm64 | tr -d ' ')" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "${{ steps.meta.outputs.tag }}" \
-            dist/gs-darwin-universal dist/gs-arm64 dist/gs-x64 dist/SHA256SUMS dist/ghostpdl-*.tar.gz LICENSE \
-            --title "Ghostscript ${{ inputs.gs_version }} (macOS)" \
-            --notes "Ghostscript ${{ inputs.gs_version }}, built from upstream GhostPDL source (attached as ghostpdl-${{ inputs.gs_version }}.tar.gz — AGPL-3.0 §6 corresponding source). See README.md for the full compliance notice."
+            dist/gs-arm64 dist/SHA256SUMS dist/ghostpdl-*.tar.gz LICENSE \
+            --title "Ghostscript ${{ inputs.gs_version }} (macOS arm64)" \
+            --notes "Ghostscript ${{ inputs.gs_version }}, built from upstream GhostPDL source for macOS arm64 (Apple Silicon) only. Source attached as ghostpdl-${{ inputs.gs_version }}.tar.gz — AGPL-3.0 §6 corresponding source. See README.md for the full compliance notice."
 
       - name: Update manifest.json
         run: |
@@ -113,8 +68,8 @@ jobs:
             "releaseTag": "${{ steps.meta.outputs.tag }}",
             "publishedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "platforms": {
-              "darwin-universal": {
-                "url": "https://github.com/${{ github.repository }}/releases/download/${{ steps.meta.outputs.tag }}/gs-darwin-universal",
+              "darwin-arm64": {
+                "url": "https://github.com/${{ github.repository }}/releases/download/${{ steps.meta.outputs.tag }}/gs-arm64",
                 "sha256": "${{ steps.meta.outputs.sha256 }}",
                 "size": ${{ steps.meta.outputs.size }}
               }
