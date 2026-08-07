@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "ghostscriptVersion": null,
+  "releaseTag": null,
+  "publishedAt": null,
+  "platforms": {
+    "darwin-universal": {
+      "url": null,
+      "sha256": null,
+      "size": null
+    }
+  }
+}
