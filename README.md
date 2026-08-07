@@ -54,15 +54,40 @@ proprietary app would trigger AGPL obligations for that app. Instead:
 
 ## What gets built
 
-A single, self-contained `gs` executable for macOS arm64, with no
-external `Resource/` directory required at runtime:
+Two self-contained `gs` executables for macOS arm64, differing only in
+which device drivers are compiled in (everything else — interpreter,
+PDF/PS support, deployment target — is identical). Upstream Ghostscript
+defaults to building **all ~349** device drivers, including dozens of
+long-obsolete dot-matrix/inkjet printer drivers no one has used in
+decades — most consumers only need a handful of them.
 
-- Built with `COMPILE_INITS=1` (default) — PostScript init files and
-  resources are baked into the binary.
-- Minimal device set: `jpeg` + `pngalpha` (EPS → JPEG/PNG).
+| Variant | Devices | Use case |
+|---|---|---|
+| `gs-arm64-standard` | `pdfwrite`, `ps2write`, `pngalpha`, `jpeg`, `tiff24nc` | The common conversion targets most `gs` users reach for (PDF/PS output + raster). Recommended default. |
+| `gs-arm64-full` | all upstream devices (~349) | Everything, including legacy printer drivers. Largest; pick this only if you need a specific obscure device. |
+
+There is deliberately **no raster-only "minimal" variant** (e.g. just
+`jpeg`+`pngalpha`): GhostPDL's built-in PDF interpreter unconditionally
+references Arc4 filter symbols (used for encrypted-PDF support) that
+only get linked in via the `pdfwrite`/`ps2write` device pair — they're
+one inseparable code module upstream. A `--with-drivers` list without
+one of them fails to link. Forcing it in (`jpeg,pngalpha,pdfwrite`)
+only came out ~400KB smaller than `standard` (which also has
+`tiff24nc`) — not a meaningfully distinct tier, so it isn't shipped.
+
+Pick whichever fits your use case — `standard` covers the vast
+majority of needs; reach for `full` only if you specifically need a
+device not in that list.
+
+Both variants share:
+
+- `COMPILE_INITS=1` (default) — PostScript init files and resources
+  baked into the binary, no external `Resource/` directory needed at
+  runtime.
 - Configured with `--without-x --disable-cups --disable-gtk
   --disable-fontconfig --disable-dbus --without-tesseract` — no X11,
-  CUPS, GTK, system font discovery, dbus, or OCR.
+  CUPS, GTK, system font discovery, dbus, or OCR (irrelevant for a
+  headless CLI redistribution regardless of device-driver variant).
 - Statically uses the bundled libjpeg/libpng/zlib/freetype from the gs
   source tree — minimal external dependencies (the only linked
   libraries are macOS system ones: `libSystem` + `libiconv`).
@@ -72,7 +97,6 @@ external `Resource/` directory required at runtime:
   version happens to be on the build machine (e.g. a binary built on a
   macOS 26 runner would refuse to run on anything older than macOS 26)
   — confirmed by testing an unpinned build before this was added.
-- Expected size: roughly 15–30 MB.
 
 ## Repo layout
 
@@ -81,7 +105,7 @@ ghostscript-macos-builds/
 ├── README.md              # this file
 ├── LICENSE                # AGPL-3.0
 ├── build/
-│   ├── build-macos.sh     # arm64 build recipe (parametric by GS_VERSION)
+│   ├── build-macos.sh     # arm64 build recipe (parametric by GS_VERSION + VARIANT)
 │   └── verify.sh          # renders a test EPS, checks exit 0 + non-empty output
 ├── source/                 # local cache of the upstream source tarball during builds
 ├── manifest.json           # machine-readable pointer to the latest release (consumed by downstream apps)
@@ -94,8 +118,8 @@ ghostscript-macos-builds/
 ## Building locally
 
 ```bash
-GS_VERSION=10.07.1 ./build/build-macos.sh
-./build/verify.sh ./dist/gs-arm64
+GS_VERSION=10.07.1 VARIANT=standard ./build/build-macos.sh   # or VARIANT=full
+./build/verify.sh ./dist/gs-arm64-standard
 ```
 
 Must run on an arm64 Mac (cross-compiling `gs` is not supported). CI
@@ -109,7 +133,7 @@ first release attempt here).
 
 Each GitHub Release contains:
 
-- `gs-arm64`
+- `gs-arm64-full`, `gs-arm64-standard` (see §"What gets built" above)
 - `SHA256SUMS`
 - `LICENSE`
 - The upstream source tarball (`ghostpdl-<version>.tar.gz`) — AGPL-3.0
@@ -117,7 +141,8 @@ Each GitHub Release contains:
 - Release notes with the exact upstream `gs` version
 
 `manifest.json` at the repo root always points at the latest release
-for programmatic discovery (see file for schema). Consumers that need
+for programmatic discovery, with one entry per variant under
+`platforms.darwin-arm64` (see file for schema). Consumers that need
 strong integrity guarantees should still pin an explicit version +
 SHA256 in their own codebase rather than trusting the mutable manifest
 alone.

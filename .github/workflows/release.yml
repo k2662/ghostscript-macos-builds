@@ -17,13 +17,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build gs (arm64)
+      - name: Build gs (arm64, all variants)
         env:
           GS_VERSION: ${{ inputs.gs_version }}
-        run: ./build/build-macos.sh
+        run: |
+          for variant in full standard; do
+            VARIANT="${variant}" ./build/build-macos.sh
+          done
 
-      - name: Verify
-        run: ./build/verify.sh dist/gs-arm64
+      - name: Verify all variants
+        run: |
+          for variant in full standard; do
+            ./build/verify.sh "dist/gs-arm64-${variant}"
+          done
 
       # No Apple Developer ID certificate is available, so binaries are
       # released unsigned/un-notarized on purpose. Consumers must strip
@@ -41,23 +47,27 @@ jobs:
 
       - name: Checksums
         working-directory: dist
-        run: shasum -a 256 gs-arm64 ghostpdl-*.tar.gz > SHA256SUMS
+        run: shasum -a 256 gs-arm64-full gs-arm64-standard ghostpdl-*.tar.gz > SHA256SUMS
 
       - name: Compute release metadata
         id: meta
         run: |
           echo "tag=gs-${{ inputs.gs_version }}" >> "$GITHUB_OUTPUT"
-          echo "sha256=$(shasum -a 256 dist/gs-arm64 | awk '{print $1}')" >> "$GITHUB_OUTPUT"
-          echo "size=$(wc -c < dist/gs-arm64 | tr -d ' ')" >> "$GITHUB_OUTPUT"
+          for variant in full standard; do
+            echo "sha256_${variant}=$(shasum -a 256 dist/gs-arm64-${variant} | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+            echo "size_${variant}=$(wc -c < dist/gs-arm64-${variant} | tr -d ' ')" >> "$GITHUB_OUTPUT"
+          done
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "${{ steps.meta.outputs.tag }}" \
-            dist/gs-arm64 dist/SHA256SUMS dist/ghostpdl-*.tar.gz LICENSE \
+            dist/gs-arm64-full dist/gs-arm64-standard \
+            dist/SHA256SUMS dist/ghostpdl-*.tar.gz LICENSE \
             --title "Ghostscript ${{ inputs.gs_version }} (macOS arm64)" \
-            --notes "Ghostscript ${{ inputs.gs_version }}, built from upstream GhostPDL source for macOS arm64 (Apple Silicon) only. Source attached as ghostpdl-${{ inputs.gs_version }}.tar.gz — AGPL-3.0 §6 corresponding source. See README.md for the full compliance notice."
+            --notes "Ghostscript ${{ inputs.gs_version }} for macOS arm64 (Apple Silicon), two variants (see README): gs-arm64-full (all upstream devices, ~349) and gs-arm64-standard (pdfwrite/ps2write/pngalpha/jpeg/tiff24nc — recommended default). Source attached as ghostpdl-${{ inputs.gs_version }}.tar.gz — AGPL-3.0 §6 corresponding source. See README.md for the full compliance notice." \
+            --clobber
 
       - name: Update manifest.json
         run: |
@@ -69,9 +79,18 @@ jobs:
             "publishedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "platforms": {
               "darwin-arm64": {
-                "url": "https://github.com/${{ github.repository }}/releases/download/${{ steps.meta.outputs.tag }}/gs-arm64",
-                "sha256": "${{ steps.meta.outputs.sha256 }}",
-                "size": ${{ steps.meta.outputs.size }}
+                "full": {
+                  "url": "https://github.com/${{ github.repository }}/releases/download/${{ steps.meta.outputs.tag }}/gs-arm64-full",
+                  "sha256": "${{ steps.meta.outputs.sha256_full }}",
+                  "size": ${{ steps.meta.outputs.size_full }},
+                  "devices": "all upstream device drivers (~349)"
+                },
+                "standard": {
+                  "url": "https://github.com/${{ github.repository }}/releases/download/${{ steps.meta.outputs.tag }}/gs-arm64-standard",
+                  "sha256": "${{ steps.meta.outputs.sha256_standard }}",
+                  "size": ${{ steps.meta.outputs.size_standard }},
+                  "devices": "pdfwrite, ps2write, pngalpha, jpeg, tiff24nc"
+                }
               }
             }
           }

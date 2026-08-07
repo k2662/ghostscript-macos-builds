@@ -1,11 +1,25 @@
 #!/usr/bin/env bash
-# Build a minimal, self-contained Ghostscript binary for macOS arm64
-# (Apple Silicon only — see README for why x64 isn't built here).
+# Build a self-contained Ghostscript binary for macOS arm64 (Apple
+# Silicon only — see README for why x64 isn't built here).
 #
 # Usage:
-#   GS_VERSION=10.07.1 ./build/build-macos.sh
+#   GS_VERSION=10.07.1 VARIANT=standard ./build/build-macos.sh
 #
-# Produces: dist/gs-arm64
+# VARIANT selects which device drivers get compiled in:
+#   full     - upstream default (ALL ~349 drivers, incl. legacy printers)
+#   standard - pdfwrite, ps2write, pngalpha, jpeg, tiff24nc
+#
+# There is deliberately no raster-only "minimal" variant: GhostPDL's
+# built-in PDF interpreter unconditionally references Arc4 filter
+# symbols that only get linked in via the pdfwrite/ps2write device
+# pair (they're one inseparable code module) — a --with-drivers list
+# without one of them fails to link ("Undefined symbols ... referenced
+# from: _pdfi_apply_Arc4_filter"). Confirmed by testing; a forced
+# minimal build (jpeg,pngalpha,pdfwrite) comes out ~19.4MB, only
+# ~400KB smaller than "standard" (which also includes tiff24nc) — not
+# a meaningfully distinct tier, so it isn't offered as a variant.
+#
+# Produces: dist/gs-arm64-<variant>
 #
 # Must run on an arm64 runner (see .github/workflows/release.yml for
 # the current GA runner label — GitHub periodically deprecates old
@@ -15,14 +29,21 @@
 set -euo pipefail
 
 GS_VERSION="${GS_VERSION:?Set GS_VERSION, e.g. GS_VERSION=10.07.1}"
+VARIANT="${VARIANT:?Set VARIANT to full or standard}"
 GS_TAG="gs$(echo "${GS_VERSION}" | tr -d '.')"
+
+case "${VARIANT}" in
+  full)     DRIVERS="" ;;
+  standard) DRIVERS="pdfwrite,ps2write,pngalpha,jpeg,tiff24nc" ;;
+  *) echo "VARIANT must be full or standard, got: ${VARIANT}" >&2; exit 1 ;;
+esac
 
 # Without this, clang bakes in whatever SDK version the build machine
 # happens to have (LC_BUILD_VERSION minos) — e.g. a binary built on a
 # macOS 26 runner would refuse to run on anything older than macOS 26.
 # 11.0 = Big Sur, the first macOS release with Apple Silicon support.
 export MACOSX_DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET:-11.0}"
-echo "MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET}"
+echo "VARIANT=${VARIANT} DRIVERS=${DRIVERS:-<all>} MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET}"
 
 WORKDIR="$(mktemp -d)"
 trap 'rm -rf "${WORKDIR}"' EXIT
@@ -48,21 +69,29 @@ SRC_DIR="${WORKDIR}/ghostpdl-${GS_VERSION}"
 
 pushd "${SRC_DIR}" >/dev/null
 
-echo "Configuring (minimal, self-contained via COMPILE_INITS)..."
-./configure \
-  --without-x \
-  --disable-cups \
-  --disable-gtk \
-  --disable-fontconfig \
-  --disable-dbus \
+echo "Configuring (${VARIANT}, self-contained via COMPILE_INITS)..."
+CONFIGURE_ARGS=(
+  --without-x
+  --disable-cups
+  --disable-gtk
+  --disable-fontconfig
+  --disable-dbus
   --without-tesseract
+)
+if [[ -n "${DRIVERS}" ]]; then
+  CONFIGURE_ARGS+=("--with-drivers=${DRIVERS}")
+fi
+./configure "${CONFIGURE_ARGS[@]}"
 
-echo "Building..."
-make -j"$(sysctl -n hw.ncpu)"
+# Build only the `gs` target — the plain ghostpdl `make` default also
+# builds gpcl6/gxps/gpdf/gpdl (PCL/XPS/standalone-PDF/multi-language
+# tools) which we never ship, wasting build time.
+echo "Building (gs target only)..."
+make -j"$(sysctl -n hw.ncpu)" gs
 
 popd >/dev/null
 
-OUT_PATH="${DIST_DIR}/gs-arm64"
+OUT_PATH="${DIST_DIR}/gs-arm64-${VARIANT}"
 cp "${SRC_DIR}/bin/gs" "${OUT_PATH}"
 chmod +x "${OUT_PATH}"
 

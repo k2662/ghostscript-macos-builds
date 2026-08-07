@@ -8,6 +8,12 @@
 > arm64+x64 (lipo). Realisasinya jadi **arm64-only** — GitHub Actions sudah
 > pensiunkan runner Intel macOS gratis (kini cuma tersedia sebagai runner
 > berbayar "large"), dan akun repo ini belum punya billing Actions aktif.
+> Juga, karena repo digeneralisasi jadi publik/umum (bukan cuma buat Mi-Farm),
+> device driver **tidak** dipangkas ke `jpeg`+`pngalpha` saja seperti rencana
+> §4 di bawah — device sekecil itu bahkan **gagal link** (interpreter PDF
+> bawaan gs butuh filter Arc4 yang cuma ke-link lewat `pdfwrite`/`ps2write`,
+> satu modul kode yang gak bisa dipisah). Rilis menyediakan **2 varian**
+> (`full` = semua ~349 device, `standard` = pdfwrite/ps2write/pngalpha/jpeg/tiff24nc).
 > Lihat README repo untuk kontrak/skema rilis yang benar-benar dipakai.
 
 ## 1. Konteks & tujuan
