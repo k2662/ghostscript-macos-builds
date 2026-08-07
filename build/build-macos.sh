@@ -49,6 +49,8 @@ echo "Configuring (minimal, self-contained via COMPILE_INITS)..."
   --without-x \
   --disable-cups \
   --disable-gtk \
+  --disable-fontconfig \
+  --disable-dbus \
   --without-tesseract
 
 echo "Building for ${ARCH}..."
