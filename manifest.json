@@ -1,12 +1,22 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "ghostscriptVersion": null,
-  "releaseTag": null,
-  "publishedAt": null,
+  "ghostscriptVersion": "10.07.1",
+  "releaseTag": "gs-10.07.1",
+  "publishedAt": "2026-08-07T16:38:56Z",
   "platforms": {
     "darwin-arm64": {
-      "full": { "url": null, "sha256": null, "size": null, "devices": "all upstream device drivers (~349)" },
-      "standard": { "url": null, "sha256": null, "size": null, "devices": "pdfwrite, ps2write, pngalpha, jpeg, tiff24nc" }
+      "full": {
+        "url": "https://github.com/microstockfarm-code/ghostscript-macos-builds/releases/download/gs-10.07.1/gs-arm64-full",
+        "sha256": "3d46689e2e7f0c313724002ab88163ef71cb5ffbb1324da955dc423714f6fbe3",
+        "size": 27464480,
+        "devices": "all upstream device drivers (~349)"
+      },
+      "standard": {
+        "url": "https://github.com/microstockfarm-code/ghostscript-macos-builds/releases/download/gs-10.07.1/gs-arm64-standard",
+        "sha256": "d73d115d58016096f4473e1d3e6153335d016302ce4c3fddfadfeefcc528f95f",
+        "size": 19764496,
+        "devices": "pdfwrite, ps2write, pngalpha, jpeg, tiff24nc"
+      }
     }
   }
 }
