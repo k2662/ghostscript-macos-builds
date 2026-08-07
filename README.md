@@ -56,9 +56,17 @@ external `Resource/` directory required at runtime:
   resources are baked into the binary.
 - Minimal device set: `jpeg` + `pngalpha` (EPS → JPEG/PNG).
 - Configured with `--without-x --disable-cups --disable-gtk
-  --without-tesseract` — no X11, CUPS, GTK, or OCR.
+  --disable-fontconfig --disable-dbus --without-tesseract` — no X11,
+  CUPS, GTK, system font discovery, dbus, or OCR.
 - Statically uses the bundled libjpeg/libpng/zlib/freetype from the gs
-  source tree — minimal external dependencies.
+  source tree — minimal external dependencies (the only linked
+  libraries are macOS system ones: `libSystem` + `libiconv`).
+- **Minimum macOS version**: `arm64` slice targets **macOS 11.0**
+  (Big Sur — the first release with Apple Silicon support); `x64`
+  slice targets **macOS 10.15** (Catalina). Set explicitly via
+  `MACOSX_DEPLOYMENT_TARGET` in `build/build-macos.sh` — without it,
+  clang bakes in whatever SDK version happens to be on the build
+  machine, which silently makes the binary unusable on older macOS.
 - Expected size: roughly 15–30 MB per architecture.
 
 ## Repo layout

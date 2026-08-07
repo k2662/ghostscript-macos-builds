@@ -16,9 +16,16 @@ ARCH="${ARCH:?Set ARCH to arm64 or x64}"
 GS_TAG="gs$(echo "${GS_VERSION}" | tr -d '.')"
 
 case "${ARCH}" in
-  arm64|x64) ;;
+  arm64) DEFAULT_DEPLOYMENT_TARGET=11.0 ;;   # first macOS with Apple Silicon support
+  x64)   DEFAULT_DEPLOYMENT_TARGET=10.15 ;;
   *) echo "ARCH must be arm64 or x64, got: ${ARCH}" >&2; exit 1 ;;
 esac
+
+# Without this, clang bakes in whatever SDK version the build machine
+# happens to have (LC_BUILD_VERSION minos) — e.g. a binary built on a
+# macOS 26 runner would refuse to run on anything older than macOS 26.
+export MACOSX_DEPLOYMENT_TARGET="${MACOSX_DEPLOYMENT_TARGET:-${DEFAULT_DEPLOYMENT_TARGET}}"
+echo "MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET}"
 
 WORKDIR="$(mktemp -d)"
 trap 'rm -rf "${WORKDIR}"' EXIT
