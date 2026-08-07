@@ -62,12 +62,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          gh release delete "${{ steps.meta.outputs.tag }}" --yes --cleanup-tag || true
           gh release create "${{ steps.meta.outputs.tag }}" \
             dist/gs-arm64-full dist/gs-arm64-standard \
             dist/SHA256SUMS dist/ghostpdl-*.tar.gz LICENSE \
             --title "Ghostscript ${{ inputs.gs_version }} (macOS arm64)" \
-            --notes "Ghostscript ${{ inputs.gs_version }} for macOS arm64 (Apple Silicon), two variants (see README): gs-arm64-full (all upstream devices, ~349) and gs-arm64-standard (pdfwrite/ps2write/pngalpha/jpeg/tiff24nc — recommended default). Source attached as ghostpdl-${{ inputs.gs_version }}.tar.gz — AGPL-3.0 §6 corresponding source. See README.md for the full compliance notice." \
-            --clobber
+            --notes "Ghostscript ${{ inputs.gs_version }} for macOS arm64 (Apple Silicon), two variants (see README): gs-arm64-full (all upstream devices, ~349) and gs-arm64-standard (pdfwrite/ps2write/pngalpha/jpeg/tiff24nc — recommended default). Source attached as ghostpdl-${{ inputs.gs_version }}.tar.gz — AGPL-3.0 §6 corresponding source. See README.md for the full compliance notice."
 
       - name: Update manifest.json
         run: |
