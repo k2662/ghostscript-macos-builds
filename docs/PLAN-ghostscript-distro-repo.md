@@ -189,9 +189,15 @@ Aturan integrasi:
 
 ## 12. Risiko / pertanyaan terbuka
 
-- **Notarization**: butuh Apple Developer ID cert. Kalau tak ada → andalkan strip-quarantine (jalan, sedikit kurang mulus). Mi-Farm dist:mac saat ini *ad-hoc sign* (bukan Developer ID) → kemungkinan pakai strip-quarantine dulu.
+- **Notarization**: **diputuskan — tidak ada Apple Developer ID cert**, jadi
+  pipeline rilis **tidak** melakukan codesign/notarize (lihat komentar TODO di
+  `.github/workflows/release.yml`). Mitigasi yang dipakai: **strip-quarantine**
+  di sisi konsumen (§9) — `xattr -d com.apple.quarantine` + `chmod +x` setelah
+  unduh & verifikasi SHA256. Jalan, sedikit kurang mulus (user mungkin lihat
+  prompt Gatekeeper sekali kalau langkah strip gagal/dilewati). Bisa
+  ditambahkan codesign/notarize belakangan kalau ada cert Developer ID — tidak
+  butuh ubah kontrak integrasi, cuma menghilangkan kebutuhan strip-quarantine.
 - **Universal vs per-arch**: universal (lipo) paling simpel untuk user; ukuran ~2×. Rekomendasi: universal.
 - **Cross-compile**: hindari — build per-arch di runner native lalu lipo.
 - **Legal**: reading subprocess/mere-aggregation aman & mainstream, tapi konfirmasi sekali dengan penasihat hukum sebelum go-public.
-- **Bump versi gs**: karena SHA256 dipin di Mi-Farm, butuh rilis Mi-Farm untuk update — dapat diterima mengingat frekuensi rendah.
-```
+- **Bump versi gs**: karena SHA256 dipin di app konsumen, butuh rilis baru app tsb untuk update — dapat diterima mengingat frekuensi rendah.

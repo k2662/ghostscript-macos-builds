@@ -67,8 +67,11 @@ jobs:
       - name: Verify universal binary
         run: ./build/verify.sh dist/gs-darwin-universal
 
-      # TODO: codesign + notarize dist/gs-darwin-universal here once an
-      # Apple Developer ID certificate is available (see docs/PLAN, §9).
+      # No Apple Developer ID certificate is available, so binaries are
+      # released unsigned/un-notarized on purpose. Consumers must strip
+      # com.apple.quarantine after downloading (see README's integration
+      # contract, and docs/PLAN §9/§12). Revisit if a Developer ID cert
+      # becomes available: add codesign + notarize here.
 
       - name: Fetch corresponding source tarball (AGPL-3.0 §6)
         env:
