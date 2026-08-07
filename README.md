@@ -93,8 +93,10 @@ GS_VERSION=10.04.0 ARCH=arm64 ./build/build-macos.sh
 ./build/verify.sh ./dist/gs-arm64
 ```
 
-Build each architecture on a native runner (arm64 on `macos-14`, x64 on
-`macos-13` — cross-compiling `gs` is not supported), then combine into
+Build each architecture on a native runner (arm64 on `macos-15`, x64 on
+`macos-15-large` — cross-compiling `gs` is not supported; check
+[actions/runner-images](https://github.com/actions/runner-images#available-images)
+for current GA labels, since GitHub deprecates old ones), then combine into
 a universal binary:
 
 ```bash

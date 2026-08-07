@@ -6,8 +6,11 @@
 #
 # Produces: dist/gs-<ARCH>
 #
-# Must run on a native runner for the target arch (macos-14 = arm64,
-# macos-13 = x64) — cross-compiling Ghostscript is not supported.
+# Must run on a native runner for the target arch (see
+# .github/workflows/release.yml for the current GA runner labels —
+# GitHub periodically deprecates old macos-NN images, so check
+# https://github.com/actions/runner-images if this drifts) —
+# cross-compiling Ghostscript is not supported.
 
 set -euo pipefail
 
