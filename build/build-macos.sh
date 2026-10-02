@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build a self-contained Ghostscript binary for macOS arm64 (Apple
+# Build a self-contained Ghostscript binary for macOS x86_64 (Apple
 # Silicon only — see README for why x64 isn't built here).
 #
 # Usage:
@@ -91,7 +91,7 @@ make -j"$(sysctl -n hw.ncpu)" gs
 
 popd >/dev/null
 
-OUT_PATH="${DIST_DIR}/gs-arm64-${VARIANT}"
+OUT_PATH="${DIST_DIR}/gs-x86_64-${VARIANT}"
 cp "${SRC_DIR}/bin/gs" "${OUT_PATH}"
 chmod +x "${OUT_PATH}"
 
